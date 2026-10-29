@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kiezkarte Pumpkin Mid-Fi</title>
+<!--
+  Mid-fidelity mobile prototype · Project: Buying a Pumpkin Spice Latte in Berlin · 2026-10-29
+  Same flow and research grounding as 03_Prototype_Mobile.html (kept as the low-fi version),
+  restyled after 03_Moodboard_Look-And-Feel.md: pumpkin / apricot / honey palette and cream type (images 3, 4, 9),
+  card, sheet, level-scale and pill patterns (images 6, 7, 8), glossy drops (images 1, 2).
+  Illustrations are drawn in SVG/CSS; no reference images are used. Café names and data are invented.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pumpkin: #E8701A;
+    --pumpkin-deep: #C9530F;
+    --apricot: #F39A2B;
+    --honey: #D98A1E;
+    --rust: #A8401A;
+    --peach: #F2B38A;
+    --cream: #FFF6EA;
+    --paper: #FBF5EC;
+    --card: #FFFFFF;
+    --brown: #3E2A20;
+    --muted: #8A7466;
+    --line: #EDE1D1;
+    --safe: #2F7A45;
+    --safe-soft: #E4F0E2;
+    --risk: #B23A1B;
+    --risk-soft: #FBE3D7;
+    --ev: #3B4FD1;
+    --ev-soft: #E5E8FB;
+    --display: "Anton", "Impact", "Arial Narrow", sans-serif;
+    --serif: "Instrument Serif", Georgia, serif;
+    --sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #EFE6DA; color: var(--brown); font: 15px/1.45 var(--sans);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  }
+  button { font: inherit; color: inherit; }
+
+  .toolbar { width: 100%; max-width: 420px; padding: 14px 16px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+  .toolbar strong { color: var(--brown); }
+  .ev-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .ev-toggle input { accent-color: var(--ev); width: 16px; height: 16px; }
+
+  .phone {
+    width: 390px; max-width: 100%; height: 820px; background: var(--paper); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 30px 60px rgba(120,60,10,.18), 0 0 0 10px #2a1d16; margin: 10px 0 40px;
+    display: flex; flex-direction: column;
+  }
+  @media (max-width: 460px) {
+    .phone { width: 100%; height: auto; min-height: calc(100vh - 44px); border-radius: 0; box-shadow: none; margin: 0; }
+    .toolbar { padding: 10px 16px; }
+  }
+  .status { position: absolute; top: 0; left: 0; right: 0; height: 40px; z-index: 20; display: flex; justify-content: space-between; align-items: center; padding: 6px 28px 0; font-size: 13px; font-weight: 700; pointer-events: none; }
+  .phone.on-orange .status { color: var(--cream); }
+
+  .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; position: relative; }
+  .screen.active { display: flex; animation: in .28s ease; }
+  @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .scroll { flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .pad { padding: 0 20px; }
+
+  /* type */
+  .display { font-family: var(--display); text-transform: uppercase; line-height: .92; letter-spacing: .005em; font-weight: 400; margin: 0; }
+  .serif { font-family: var(--serif); font-weight: 400; letter-spacing: -.01em; margin: 0; }
+  .serif em { font-style: italic; color: var(--pumpkin); }
+  .label { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; }
+  .small { font-size: 12.5px; color: var(--muted); }
+
+  /* pumpkin field */
+  .field { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(120% 90% at 50% 40%, #D9600F, #9E3A08); }
+  .field svg { position: absolute; filter: drop-shadow(0 6px 6px rgba(80,20,0,.35)); }
+  .field::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(150,50,5,.15), rgba(120,40,5,.05) 40%, rgba(110,35,5,.45)); }
+
+  /* big toggle */
+  .bigtoggle { width: 168px; height: 80px; border-radius: 40px; border: 0; background: rgba(255,246,234,.28); position: relative; cursor: pointer; transition: background .3s; box-shadow: inset 0 2px 8px rgba(80,20,0,.25); backdrop-filter: blur(4px); }
+  .bigtoggle::after { content: ""; position: absolute; top: 8px; left: 8px; width: 64px; height: 64px; border-radius: 50%; background: var(--cream); box-shadow: 0 4px 12px rgba(80,20,0,.3); transition: left .35s cubic-bezier(.5,1.6,.5,1); }
+  .bigtoggle[aria-checked="true"] { background: var(--pumpkin); }
+  .bigtoggle[aria-checked="true"]::after { left: 96px; }
+
+  /* honey drops */
+  .drop { position: absolute; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 7%, rgba(255,255,255,0) 12%),
+                radial-gradient(circle at 55% 60%, #F8CF7A 0%, #E59A2A 55%, #B9650F 100%);
+    box-shadow: 0 8px 14px rgba(150,80,10,.25), inset 0 -5px 10px rgba(120,55,0,.35), inset 0 3px 6px rgba(255,240,200,.6); opacity: .92; }
+
+  /* chips + controls */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1.5px solid var(--line); background: var(--card); border-radius: 999px; padding: 9px 15px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .chip[aria-pressed="true"] { background: var(--brown); color: var(--cream); border-color: var(--brown); }
+  .chip.add { border-style: dashed; color: var(--muted); }
+
+  .consent { margin-top: 12px; background: var(--card); border-radius: 22px; padding: 14px 16px; display: flex; gap: 14px; align-items: center; box-shadow: 0 2px 0 var(--line); }
+  .switch { width: 52px; height: 32px; border-radius: 16px; background: #E6D9C8; border: 0; position: relative; cursor: pointer; flex: none; transition: background .2s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: var(--cream); box-shadow: 0 2px 4px rgba(80,30,0,.25); transition: left .2s; }
+  .switch[aria-checked="true"] { background: var(--pumpkin); }
+  .switch[aria-checked="true"]::after { left: 23px; }
+
+  .budget { background: var(--card); border-radius: 22px; padding: 16px; box-shadow: 0 2px 0 var(--line); }
+  .budget-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .budget output { font-family: var(--serif); font-size: 34px; line-height: 1; color: var(--pumpkin); }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px; margin: 16px 0 6px;
+    background: linear-gradient(90deg, #F8CF7A, var(--apricot), var(--pumpkin), var(--rust)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); border: 3px solid var(--brown); cursor: pointer; }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--cream); border: 3px solid var(--brown); cursor: pointer; }
+
+  /* buttons */
+  .footer { flex: none; padding: 12px 20px 22px; background: linear-gradient(180deg, rgba(251,245,236,0), var(--paper) 30%); }
+  .cta { width: 100%; border: 0; border-radius: 999px; background: var(--brown); color: var(--cream); padding: 8px 8px 8px 24px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 16px; cursor: pointer; min-height: 60px; }
+  .cta .arrow { width: 44px; height: 44px; border-radius: 50%; background: var(--pumpkin); display: grid; place-items: center; font-size: 20px; }
+  .cta-row { display: flex; gap: 10px; }
+  .cta-row .cta { flex: 1; }
+  .heart { width: 60px; height: 60px; border-radius: 20px; border: 0; background: var(--pumpkin); color: var(--cream); font-size: 22px; cursor: pointer; flex: none; }
+  .heart[aria-pressed="true"] { background: var(--rust); }
+
+  /* tab bar */
+  .tabbar { flex: none; display: flex; justify-content: space-around; align-items: center; padding: 10px 24px 22px; background: var(--card); border-top: 1px solid var(--line); }
+  .tab { border: 0; background: none; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--muted); cursor: pointer; }
+  .tab.on { background: #FDE6D3; color: var(--pumpkin-deep); }
+
+  /* splash */
+  #s-splash { background: var(--pumpkin-deep); }
+  .splash-content { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--cream); padding: 60px 22px 40px; }
+  .splash-content .kicker { font-weight: 700; font-size: 17px; text-shadow: 0 2px 10px rgba(80,20,0,.4); }
+  .splash-content .display { font-size: 74px; margin: 10px 0 46px; text-shadow: 0 4px 24px rgba(80,20,0,.45); }
+  .splash-content .caption { margin-top: 14px; font-weight: 500; text-shadow: 0 2px 10px rgba(80,20,0,.4); }
+  .brandmark { position: absolute; top: 52px; left: 0; right: 0; text-align: center; z-index: 2; color: var(--cream); font-family: var(--serif); font-size: 22px; font-style: italic; }
+
+  /* setup header */
+  .setup-head { position: relative; padding: 58px 20px 8px; }
+  .setup-head h1 { font-size: 40px; line-height: 1.02; max-width: 300px; position: relative; z-index: 1; }
+  .lang { position: absolute; top: 52px; right: 20px; border: 1.5px solid var(--line); background: var(--card); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 700; color: var(--muted); z-index: 2; }
+  .setup-head p { color: var(--muted); margin: 10px 0 0; max-width: 290px; position: relative; z-index: 1; }
+
+  /* list */
+  .list-head { padding: 56px 20px 6px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .list-head h1 { font-size: 40px; line-height: 1; }
+  .filterpill { border: 0; background: var(--card); border-radius: 999px; padding: 7px 13px; font-size: 12.5px; font-weight: 700; color: var(--brown); box-shadow: 0 2px 0 var(--line); cursor: pointer; }
+  .banner { margin: 14px 20px 18px; border-radius: 26px; background: var(--pumpkin); color: var(--cream); padding: 18px 18px 18px 20px; position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; border: 0; width: calc(100% - 40px); text-align: left; }
+  .banner .display { font-size: 38px; }
+  .banner p { margin: 4px 0 0; font-weight: 500; font-size: 14px; max-width: 190px; }
+  .banner svg { flex: none; margin-right: -6px; filter: drop-shadow(0 4px 6px rgba(80,20,0,.3)); }
+
+  .card { display: block; width: 100%; text-align: left; border: 0; padding: 0; background: var(--card); border-radius: 30px; overflow: hidden; margin-bottom: 18px; cursor: pointer; box-shadow: 0 14px 30px rgba(120,60,10,.10), 0 2px 0 var(--line); transition: transform .15s; }
+  .card:active { transform: scale(.985); }
+  .card.dim { opacity: .62; }
+  .card-img { height: 168px; position: relative; display: grid; place-items: center; overflow: hidden; margin: 8px 8px 0; border-radius: 24px; }
+  .notch { position: absolute; top: 0; right: 0; background: var(--card); padding: 6px 14px 10px 18px; border-bottom-left-radius: 22px; font-family: var(--serif); font-size: 28px; line-height: 1; }
+  .notch::before, .notch::after { content: ""; position: absolute; width: 22px; height: 22px; background: radial-gradient(circle at 0 100%, transparent 21px, var(--card) 22px); }
+  .notch::before { left: -22px; top: 0; }
+  .notch::after { right: 0; bottom: -22px; }
+  .card-strip { position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 14px; font-size: 11.5px; font-weight: 700; letter-spacing: .03em; color: var(--cream); background: rgba(62,42,32,.35); backdrop-filter: blur(6px); text-align: center; }
+  .card-strip.old { background: rgba(178,58,27,.8); }
+  .card-body { padding: 14px 18px 18px; }
+  .card-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .card-name { font-weight: 700; font-size: 19px; letter-spacing: -.01em; }
+  .card-link { font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  .card-meta { color: var(--muted); font-size: 13px; margin: 2px 0 12px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 5px 11px; background: #F6EEE3; color: var(--brown); }
+  .tag.safe { background: var(--safe-soft); color: var(--safe); }
+  .tag.risk { background: var(--risk-soft); color: var(--risk); }
+
+  /* detail */
+  .hero { height: 330px; position: relative; flex: none; display: grid; place-items: center; overflow: hidden; }
+  .roundbtn { position: absolute; top: 50px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,246,234,.92); display: grid; place-items: center; font-size: 20px; cursor: pointer; z-index: 3; box-shadow: 0 4px 10px rgba(80,20,0,.15); }
+  .roundbtn.left { left: 18px; }
+  .sheet { background: var(--paper); border-radius: 34px 34px 0 0; margin-top: -40px; position: relative; z-index: 2; padding: 10px 20px 20px; }
+  .grabber { width: 44px; height: 5px; border-radius: 3px; background: #E2D3C0; margin: 0 auto 16px; }
+  .title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .title-row h1 { font-size: 36px; line-height: 1; }
+  .bigprice { font-family: var(--serif); font-size: 36px; line-height: 1; color: var(--pumpkin); }
+  .verdict { margin-top: 18px; border-radius: 22px; padding: 16px; display: flex; gap: 14px; align-items: center; }
+  .verdict.safe { background: var(--safe-soft); color: var(--safe); }
+  .verdict.risk { background: var(--risk-soft); color: var(--risk); }
+  .verdict .ic { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 20px; flex: none; }
+  .verdict.safe .ic { background: var(--safe); }
+  .verdict.risk .ic { background: var(--risk); }
+  .verdict b { display: block; font-size: 16px; }
+  .verdict span { font-size: 13px; color: var(--brown); }
+  .askfor { margin-top: 10px; border-radius: 22px; background: var(--card); padding: 14px 16px; border: 1.5px dashed var(--apricot); font-size: 14px; }
+  .askfor b { color: var(--pumpkin-deep); }
+
+  .ingredients { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ing { background: var(--card); border-radius: 22px; padding: 14px; box-shadow: 0 2px 0 var(--line); }
+  .ing.wide { grid-column: 1 / -1; }
+  .ing .k { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .ing .v { font-weight: 700; margin-top: 4px; }
+  .ing .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .ing .flag { display: inline-block; margin-top: 8px; }
+
+  .level { display: flex; border-radius: 16px; overflow: visible; margin-top: 10px; height: 46px; }
+  .level i { flex: 1; display: block; position: relative; }
+  .level i:first-child { border-radius: 14px 0 0 14px; }
+  .level i:last-child { border-radius: 0 14px 14px 0; }
+  .level i.on { transform: scale(1.12); border-radius: 12px; box-shadow: 0 0 0 3px var(--card), 0 6px 14px rgba(120,60,10,.3); z-index: 1; }
+  .level-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cmp { border-radius: 22px; padding: 14px 16px; }
+  .cmp.psl { background: var(--pumpkin); color: var(--cream); }
+  .cmp.fw { background: var(--card); box-shadow: 0 2px 0 var(--line); }
+  .cmp .n { font-family: var(--serif); font-size: 34px; line-height: 1.1; }
+  .cmp .s { font-size: 12.5px; opacity: .85; }
+  .source { margin: 18px 0 4px; font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: flex-start; }
+  .source.old { color: var(--risk); }
+
+  /* alerts */
+  .alert-hero { height: 300px; position: relative; flex: none; }
+  .alert-hero .inner { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 20px 24px; color: var(--cream); }
+  .alert-hero .display { font-size: 52px; text-shadow: 0 4px 20px rgba(80,20,0,.4); }
+  .alert-hero .row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .alert-hero .bigtoggle { width: 112px; height: 56px; flex: none; }
+  .alert-hero .bigtoggle::after { width: 44px; height: 44px; top: 6px; left: 6px; }
+  .alert-hero .bigtoggle[aria-checked="true"]::after { left: 62px; }
+  .alert-hero .bigtoggle[aria-checked="true"] { background: var(--cream); }
+  .alert-hero .bigtoggle[aria-checked="true"]::after { background: var(--pumpkin); }
+  .rows { background: var(--card); border-radius: 26px; padding: 4px 16px; box-shadow: 0 2px 0 var(--line); margin-top: 18px; }
+  .srow { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .srow:first-child { border-top: 0; }
+  .srow b { display: block; font-size: 15px; }
+  .notif { margin-top: 10px; border-radius: 24px; padding: 14px; display: flex; gap: 12px; background: rgba(255,255,255,.75); box-shadow: 0 14px 30px rgba(120,60,10,.12); backdrop-filter: blur(10px); position: relative; overflow: hidden; }
+  .notif .appicon { width: 40px; height: 40px; border-radius: 12px; background: var(--pumpkin); display: grid; place-items: center; flex: none; }
+  .notif b { font-size: 14.5px; }
+  .notif .t { font-size: 11.5px; color: var(--muted); float: right; }
+
+  /* evidence layer */
+  .ev { display: none; }
+  body.show-ev .ev { display: inline-block; font: 600 10.5px/1.3 var(--sans); color: var(--ev); background: var(--ev-soft); border-radius: 6px; padding: 2px 6px; margin: 4px 4px 0 0; text-transform: none; letter-spacing: 0; text-shadow: none; vertical-align: middle; }
+  body.show-ev [data-ev-box] { outline: 1.5px dashed var(--ev); outline-offset: 3px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="pkA" cx="40%" cy="32%" r="75%"><stop offset="0" stop-color="#FFB15A"/><stop offset=".5" stop-color="#F07A1C"/><stop offset="1" stop-color="#B9480C"/></radialGradient>
+    <radialGradient id="pkB" cx="45%" cy="30%" r="80%"><stop offset="0" stop-color="#FFC06E"/><stop offset=".55" stop-color="#F58A26"/><stop offset="1" stop-color="#C4520E"/></radialGradient>
+    <radialGradient id="cupG" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EFE2D1"/></radialGradient>
+    <radialGradient id="coffeeG" cx="45%" cy="42%" r="62%"><stop offset="0" stop-color="#F4D7AC"/><stop offset=".55" stop-color="#D99A58"/><stop offset="1" stop-color="#93552A"/></radialGradient>
+    <symbol id="pk" viewBox="0 0 100 84">
+      <ellipse cx="27" cy="50" rx="24" ry="30" fill="url(#pkA)"/>
+      <ellipse cx="73" cy="50" rx="24" ry="30" fill="url(#pkA)"/>
+      <ellipse cx="39" cy="50" rx="22" ry="32" fill="url(#pkB)"/>
+      <ellipse cx="61" cy="50" rx="22" ry="32" fill="url(#pkB)"/>
+      <ellipse cx="50" cy="50" rx="15" ry="33" fill="url(#pkA)"/>
+      <ellipse cx="38" cy="34" rx="5" ry="10" fill="#fff" opacity=".22"/>
+      <path d="M47 21 q-1 -12 7 -17 l4 3 q-6 5 -5 14 z" fill="#6E6A2E"/>
+    </symbol>
+    <symbol id="latte" viewBox="0 0 200 200">
+      <circle cx="108" cy="110" r="90" fill="rgba(90,40,5,.22)"/>
+      <circle cx="100" cy="100" r="90" fill="url(#cupG)"/>
+      <circle cx="100" cy="100" r="70" fill="url(#coffeeG)"/>
+      <path d="M100 52 c26 0 40 22 30 42 c-8 16 -30 22 -30 46 c0 -24 -22 -30 -30 -46 c-10 -20 4 -42 30 -42 z" fill="#FBEBD3" opacity=".88"/>
+      <path d="M100 66 c14 0 22 12 16 24 c-5 9 -16 13 -16 26 c0 -13 -11 -17 -16 -26 c-6 -12 2 -24 16 -24 z" fill="#E7B47C" opacity=".55"/>
+      <g fill="#7A3E17" opacity=".55"><circle cx="70" cy="80" r="1.6"/><circle cx="128" cy="76" r="1.3"/><circle cx="134" cy="118" r="1.8"/><circle cx="74" cy="126" r="1.4"/><circle cx="96" cy="140" r="1.2"/><circle cx="118" cy="60" r="1.1"/><circle cx="62" cy="104" r="1.3"/></g>
+      <circle cx="100" cy="100" r="85" fill="none" stroke="#fff" stroke-width="3" opacity=".7"/>
+      <ellipse cx="62" cy="48" rx="16" ry="7" fill="#fff" opacity=".55" transform="rotate(-35 62 48)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="toolbar">
+  <span><strong>Kiezkarte</strong> · mid-fi prototype</span>
+  <label class="ev-toggle"><input type="checkbox" id="evToggle"> Show evidence</label>
+</div>
+
+<div class="phone on-orange" id="phone">
+  <div class="status"><span>8:12</span><span>●●● ◔</span></div>
+
+  <!-- 0 · Splash: season is on -->
+  <section class="screen active" id="s-splash" data-orange>
+    <div class="field" id="splashField"></div>
+    <div class="brandmark">Kiezkarte</div>
+    <div class="splash-content">
+      <div class="kicker">It's back in your Kiez</div>
+      <h1 class="display">Pumpkin<br>spice<br>season</h1>
+      <button class="bigtoggle" id="seasonToggle" role="switch" aria-checked="false" aria-label="Turn on pumpkin spice season"></button>
+      <div class="caption">Switch it on to find yours</div>
+      <div><span class="ev">P01-O04 "never know if it's back"</span><span class="ev">P03-O15 once-a-year ritual</span></div>
+    </div>
+  </section>
+
+  <!-- 1 · Setup -->
+  <section class="screen" id="s-setup">
+    <div class="scroll">
+      <div class="setup-head">
+        <span class="drop" style="width:70px;height:62px;right:26px;top:96px"></span>
+        <span class="drop" style="width:26px;height:24px;right:104px;top:150px"></span>
+        <span class="drop" style="width:14px;height:13px;right:16px;top:172px"></span>
+        <button class="lang" title="German and English (platform constraint); only English is filled in">EN · DE</button>
+        <h1 class="serif">Know what's in your cup <em>before</em> the counter.</h1>
+        <p>Three quick questions, so we only show what fits you.</p>
+      </div>
+      <div class="pad">
+        <div class="label">Where do you pass by? <span class="ev">P01-O18 commute thing</span><span class="ev">P01-O19 "not on my way, not happening"</span></div>
+        <div class="chips" data-group="route" data-ev-box>
+          <button class="chip" aria-pressed="true">U Warschauer Str.</button>
+          <button class="chip" aria-pressed="true">Boxhagener Platz</button>
+          <button class="chip" aria-pressed="false">Kottbusser Tor</button>
+          <button class="chip" aria-pressed="false">Weserstraße</button>
+          <button class="chip add">+ Add stop</button>
+        </div>
+        <div class="consent">
+          <button class="switch" role="switch" aria-checked="false" aria-label="Use my location instead"></button>
+          <div><b>Use my location instead</b><div class="small">Only while the app is open. Off until you say so.</div><span class="ev">Constraint: GDPR, no tracking without consent</span></div>
+        </div>
+
+        <div class="label">Anything you can't have? <span class="ev">P03-O11 lactose intolerant</span><span class="ev">P04-O03 vegan</span></div>
+        <div class="chips" data-group="diet" data-ev-box>
+          <button class="chip" aria-pressed="true" data-diet="dairy">🥛 No dairy</button>
+          <button class="chip" aria-pressed="false" data-diet="vegan">🌱 Vegan</button>
+          <button class="chip" aria-pressed="false" data-diet="none">Nothing</button>
+        </div>
+        <p class="small" style="margin:10px 0 0">We check the sauce and the syrup, not just the milk. <span class="ev">P03-O13 dairy was in the sauce</span><span class="ev">P04-O11 "oat milk doesn't help"</span></p>
+
+        <div class="label">What's it worth to you? <span class="ev">P02-O12 checks price first</span><span class="ev">P02-O21 "maybe four euros"</span></div>
+        <div class="budget" data-ev-box>
+          <div class="budget-top"><span class="small">The most I'd pay for one</span><output id="budgetOut">Any</output></div>
+          <input type="range" id="budget" min="3.5" max="7" step="0.1" value="7" aria-label="The most I'd pay">
+          <div class="small">Slide to the end for any price. <span class="ev">P03-O17 "I'd pay anything"</span></div>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </div>
+    <div class="footer"><button class="cta" data-go="s-list">Show cafés on my way <span class="arrow">→</span></button></div>
+  </section>
+
+  <!-- 2 · List -->
+  <section class="screen" id="s-list">
+    <div class="scroll">
+      <div class="list-head">
+        <h1 class="serif">On your <em>way</em></h1>
+        <button class="filterpill" data-go="s-setup" id="filterSummary">Filters</button>
+      </div>
+      <button class="banner" data-go="s-alert" data-ev-box>
+        <div>
+          <div class="display">It's back</div>
+          <p>3 cafés on your way have it this week. Set alerts →</p>
+          <span class="ev">P01-O04 "never know if it's back"</span>
+        </div>
+        <svg width="92" height="78"><use href="#pk"/></svg>
+      </button>
+      <div class="pad" id="cards"></div>
+      <p class="small pad" style="margin:0 0 24px">Independent cafés only. Every detail comes from the café itself. <span class="ev">Constraint: independent only, café-sourced data (D08)</span></p>
+    </div>
+    <nav class="tabbar">
+      <button class="tab on" data-go="s-list">● On your way</button>
+      <button class="tab" data-go="s-alert">🔔 Alerts</button>
+    </nav>
+  </section>
+
+  <!-- 3 · Detail -->
+  <section class="screen" id="s-detail">
+    <div class="scroll" id="detail"></div>
+    <div class="footer">
+      <div class="cta-row">
+        <button class="cta" id="goBtn">Directions <span class="arrow">↗</span></button>
+        <button class="heart" aria-pressed="false" aria-label="Save" id="saveBtn">♥</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · Alerts -->
+  <section class="screen" id="s-alert" data-orange>
+    <div class="scroll">
+      <div class="alert-hero">
+        <div class="field" id="alertField"></div>
+        <div class="inner">
+          <div class="row">
+            <h1 class="display">Stop<br>checking<br>the boards</h1>
+            <button class="bigtoggle" role="switch" aria-checked="true" aria-label="Season alerts on"></button>
+          </div>
+          <div><span class="ev">P01-O03 checks chalkboards</span><span class="ev">P01-O20 "out of habit"</span><span class="ev">P03-O06 old Instagram post</span></div>
+        </div>
+      </div>
+      <div class="pad">
+        <p style="margin:18px 0 0;font-weight:500">We'll tell you when a café on your way puts it on the board.</p>
+        <div class="rows" data-ev-box>
+          <div class="srow"><div><b>When it's back on my way</b><span class="small">U Warschauer Str., Boxhagener Platz</span></div><button class="switch" role="switch" aria-checked="true" aria-label="When it's back on my way"></button></div>
+          <div class="srow"><div><b>Only if it's safe for me</b><span class="small">No dairy in milk, sauce or syrup</span><br><span class="ev">P04-O16 "where I can check what's in it"</span></div><button class="switch" role="switch" aria-checked="true" aria-label="Only if it's safe for me"></button></div>
+          <div class="srow"><div><b>Only within my price</b><span class="small" id="alertPrice">Any price</span><br><span class="ev">P02-O20 "more than double my flat white"</span></div><button class="switch" role="switch" aria-checked="false" aria-label="Only within my price"></button></div>
+          <div class="srow"><div><b>Last-week reminder</b><span class="small">Before it leaves the board</span><br><span class="ev">P03-O15 once-a-year ritual</span></div><button class="switch" role="switch" aria-checked="false" aria-label="Last-week reminder"></button></div>
+        </div>
+
+        <div class="label">What you'll get</div>
+        <div class="notif" data-ev-box>
+          <div class="appicon"><svg width="30" height="26"><use href="#pk"/></svg></div>
+          <div><span class="t">now</span><b>It's back at Café Lindgrün</b><div class="small">2 min off your route · sauce is dairy-free · €5,20</div></div>
+        </div>
+        <p class="small" style="margin:12px 0 24px">Cafés switch it on with one tap before opening, not during the rush. <span class="ev">Constraint: no extra steps in the morning rush</span></p>
+      </div>
+    </div>
+    <nav class="tabbar">
+      <button class="tab" data-go="s-list">● On your way</button>
+      <button class="tab on" data-go="s-alert">🔔 Alerts</button>
+    </nav>
+  </section>
+</div>
+
+<script>
+  const cafes = [
+    { id: "lindgruen", name: "Café Lindgrün", kiez: "Friedrichshain", near: "Boxhagener Platz", detour: 2, price: 5.2, flatWhite: 3.4,
+      base: "House-made from roasted Hokkaido", baseNote: "Cinnamon, ginger, nutmeg", realPumpkin: true,
+      sauceDairy: false, sauceVegan: true, milk: "Oat by default", milkNote: "Cow's milk on request", sweet: 2, size: "300 ml",
+      updated: "today, 7:40", fresh: true, open: "Open until 18:00", tone: ["#F7C08A", "#E8701A"] },
+    { id: "eckbohne", name: "Eckbohne", kiez: "Friedrichshain", near: "U Warschauer Str.", detour: 0, price: 4.2, flatWhite: 3.2,
+      base: "Bottled pumpkin spice syrup", baseNote: "Flavour only", realPumpkin: false,
+      sauceDairy: false, sauceVegan: true, milk: "Oat, soy or cow's", milkNote: "Your choice", sweet: 4, size: "300 ml",
+      updated: "2 days ago", fresh: true, open: "Open until 17:00", tone: ["#FAD9A4", "#F39A2B"] },
+    { id: "kastanie", name: "Rösterei Kastanie", kiez: "Friedrichshain", near: "Boxhagener Platz", detour: 4, price: 5.8, flatWhite: 3.6,
+      base: "Pumpkin sauce", baseNote: "Made with condensed milk", realPumpkin: false,
+      sauceDairy: true, sauceVegan: false, altSyrup: "PSL dairy-free", milk: "Oat or cow's", milkNote: "Your choice", sweet: 4, size: "350 ml",
+      updated: "5 days ago", fresh: true, open: "Open until 19:00", tone: ["#F6CBB0", "#D98A1E"] },
+    { id: "morgenrot", name: "Morgenrot", kiez: "Kreuzberg", near: "Kottbusser Tor", detour: 9, price: 6.5, flatWhite: 3.5,
+      base: "House sauce with pumpkin purée", baseNote: "Condensed milk, spices", realPumpkin: true,
+      sauceDairy: true, sauceVegan: false, milk: "Oat or cow's", milkNote: "Your choice", sweet: 3, size: "350 ml",
+      updated: "16 days ago", fresh: false, open: "Open until 18:00", tone: ["#F2B38A", "#A8401A"] }
+  ];
+
+  const state = { diet: "dairy", budget: 7, current: null };
+  const eur = n => "€" + n.toFixed(2).replace(".", ",");
+  const ev = t => `<span class="ev">${t}</span>`;
+  const sweetColors = ["#F8DFA0", "#F5C26A", "#EE9A3A", "#E0701E", "#B8470F"];
+  const sweetWords = ["Barely sweet", "Lightly sweet", "Medium", "Sweet", "Very sweet"];
+
+  function rng(seed) { return () => (seed = (seed * 9301 + 49297) % 233280) / 233280; }
+  function pumpkinField(el, seed, w, h) {
+    const r = rng(seed); let html = "";
+    for (let y = -40; y < h + 20; y += 62) {
+      for (let x = (y / 62) % 2 ? -60 : -20; x < w + 40; x += 88) {
+        const s = 96 + r() * 46, rot = -24 + r() * 48;
+        html += `<svg width="${s}" height="${s * .84}" style="left:${x + r() * 18}px;top:${y + r() * 14}px;transform:rotate(${rot}deg)"><use href="#pk"/></svg>`;
+      }
+    }
+    el.innerHTML = html;
+  }
+  pumpkinField(document.getElementById("splashField"), 7, 420, 860);
+  pumpkinField(document.getElementById("alertField"), 3, 420, 320);
+
+  const latteImg = (c, size) => `
+    <div style="position:absolute;inset:0;background:radial-gradient(90% 90% at 30% 25%, ${c.tone[0]}, ${c.tone[1]})"></div>
+    <span class="drop" style="width:${size * .16}px;height:${size * .15}px;left:10%;top:36%"></span>
+    <span class="drop" style="width:${size * .07}px;height:${size * .065}px;left:22%;top:62%"></span>
+    <span class="drop" style="width:${size * .1}px;height:${size * .09}px;right:14%;bottom:16%"></span>
+    <svg width="${size}" height="${size}" style="position:relative"><use href="#latte"/></svg>`;
+
+  function safety(c) {
+    if (state.diet === "none") return { ok: true, label: null };
+    const bad = state.diet === "vegan" ? !c.sauceVegan : c.sauceDairy;
+    const what = state.diet === "vegan" ? "vegan" : "dairy-free";
+    return bad ? { ok: false, label: "Sauce contains milk", alt: c.altSyrup } : { ok: true, label: `Sauce is ${what}` };
+  }
+  const inBudget = c => state.budget >= 7 || c.price <= state.budget;
+  const route = c => c.detour === 0 ? "On your route" : `${c.detour} min off your route`;
+
+  function renderList() {
+    const rank = c => { const s = safety(c); return (s.ok || s.alt ? 0 : 2) + (inBudget(c) ? 0 : 1); };
+    const sorted = [...cafes].sort((a, b) => rank(a) - rank(b) || a.detour - b.detour);
+    document.getElementById("cards").innerHTML = sorted.map((c, i) => {
+      const s = safety(c), over = !inBudget(c), dim = (!s.ok && !s.alt) || over;
+      const tags = [];
+      if (s.label) tags.push(`<span class="tag ${s.ok ? "safe" : "risk"}">${s.ok ? "✓" : "✕"} ${s.label}</span>`);
+      if (!s.ok && s.alt) tags.push(`<span class="tag safe">✓ Dairy-free syrup on request</span>`);
+      tags.push(`<span class="tag">${c.realPumpkin ? "🎃 Real pumpkin" : "Spice syrup"}</span>`);
+      if (over) tags.push(`<span class="tag risk">Over your ${eur(state.budget)}</span>`);
+      return `<button class="card ${dim ? "dim" : ""}" data-cafe="${c.id}" ${i === 0 ? "data-ev-box" : ""}>
+        <div class="card-img">${latteImg(c, 132)}
+          <div class="notch">${eur(c.price)}</div>
+          <div class="card-strip ${c.fresh ? "" : "old"}">${c.fresh ? "Confirmed by the café " + c.updated : "Last confirmed " + c.updated + " · may be gone"}</div>
+        </div>
+        <div class="card-body">
+          <div class="card-row"><span class="card-name">${c.name}</span><span class="card-link">What's in it ↗</span></div>
+          <div class="card-meta">${c.near} · ${route(c)} · ${c.open}</div>
+          <div class="tags">${tags.join("")}</div>
+          ${i === 0 ? `<div>${ev("P03-O05 walked to four places")}${ev("P03-O06 not on the menu anymore")}${ev("P02-O13 price shock at the counter")}${ev("P01-O07 real pumpkin?")}</div>` : ""}
+        </div>
+      </button>`;
+    }).join("");
+    const parts = [];
+    if (state.diet !== "none") parts.push(state.diet === "vegan" ? "Vegan" : "No dairy");
+    if (state.budget < 7) parts.push("≤ " + eur(state.budget));
+    document.getElementById("filterSummary").textContent = (parts.join(" · ") || "Filters") + "  ✎";
+    document.querySelectorAll("#cards .card").forEach(el => el.addEventListener("click", () => openDetail(el.dataset.cafe)));
+  }
+
+  function openDetail(id) {
+    const c = cafes.find(x => x.id === id); state.current = c;
+    const s = safety(c);
+    let verdict = "";
+    if (state.diet !== "none") verdict = s.ok
+      ? `<div class="verdict safe"><span class="ic">✓</span><div><b>Safe for you</b><span>No dairy in the milk, sauce or syrup.</span></div></div>`
+      : `<div class="verdict risk"><span class="ic">✕</span><div><b>Not as it comes</b><span>The sauce contains milk. Oat milk won't fix it.</span></div></div>`;
+    const level = sweetColors.map((col, n) => `<i class="${n + 1 === c.sweet ? "on" : ""}" style="background:${col}"></i>`).join("");
+
+    document.getElementById("detail").innerHTML = `
+      <div class="hero">
+        ${latteImg(c, 230)}
+        <button class="roundbtn left" data-go="s-list" aria-label="Back">‹</button>
+      </div>
+      <div class="sheet">
+        <div class="grabber"></div>
+        <div class="title-row">
+          <div><h1 class="serif">Pumpkin Spice <em>Latte</em></h1>
+            <div class="small" style="margin-top:6px">${c.name} · ${c.near} · ${c.open}</div></div>
+          <div class="bigprice">${eur(c.price)}</div>
+        </div>
+        <div data-ev-box>
+          ${verdict}
+          ${!s.ok && s.alt ? `<div class="askfor">Ask for <b>“${s.alt}”</b>. They have a second pumpkin syrup without dairy.</div>` : ""}
+          ${ev("P03-O12 barista checked the bottle in the back")}${ev("P03-O20 stop asking at every counter")}${ev("P03-O14 second dairy-free syrup")}
+        </div>
+
+        <div class="label">What's in it ${ev("P01-O08 \"Nobody could tell me\"")}${ev("P04-O09 actual pumpkin or flavour?")}</div>
+        <div class="ingredients" data-ev-box>
+          <div class="ing wide"><div class="k">Sauce / syrup</div><div class="v">${c.base}</div><div class="s">${c.baseNote}</div>
+            <span class="tag ${c.sauceDairy ? "risk" : "safe"} flag">${c.sauceDairy ? "Contains milk" : "No dairy"} · ${c.sauceVegan ? "vegan" : "not vegan"}</span></div>
+          <div class="ing"><div class="k">Real pumpkin</div><div class="v">${c.realPumpkin ? "🎃 Yes" : "No, flavour"}</div></div>
+          <div class="ing"><div class="k">Milk</div><div class="v">${c.milk}</div><div class="s">${c.milkNote}</div></div>
+          <div class="ing wide"><div class="k">Sweetness · ${sweetWords[c.sweet - 1]}</div>
+            <div class="level">${level}</div>
+            <div class="level-legend"><span>Barely</span><span>Very sweet</span></div>
+            ${ev("P01-O10 too sweet")}${ev("P01-O13 \"not syrup water\"")}</div>
+        </div>
+
+        <div class="label">Is it worth it? ${ev("P02-O20 compares with flat white")}${ev("P02-O14 walked out")}</div>
+        <div class="compare" data-ev-box>
+          <div class="cmp psl"><div class="s">Pumpkin spice · ${c.size}</div><div class="n">${eur(c.price)}</div></div>
+          <div class="cmp fw"><div class="s">Flat white here</div><div class="n">${eur(c.flatWhite)}</div><div class="s">PSL is ${(c.price / c.flatWhite).toFixed(1).replace(".", ",")}× the price</div></div>
+        </div>
+        ${inBudget(c) ? "" : `<div class="askfor" style="border-color:var(--risk)">That's over the ${eur(state.budget)} you set.</div>`}
+
+        <div class="source ${c.fresh ? "" : "old"}">${c.fresh ? "●" : "▲"}<span>Confirmed by ${c.name} ${c.updated}. Info comes from the café, not from us. ${ev("Constraint: data from cafés")}${ev("P03-O06 stale posts")}</span></div>
+      </div>`;
+    document.getElementById("goBtn").firstChild.textContent = `Directions · ${route(c)} `;
+    document.getElementById("saveBtn").setAttribute("aria-pressed", "false");
+    go("s-detail");
+  }
+
+  function go(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+    document.getElementById("phone").classList.toggle("on-orange", ["s-splash", "s-alert", "s-detail"].includes(id));
+    if (id === "s-list") renderList();
+    const sc = document.querySelector(`#${id} .scroll`); if (sc) sc.scrollTop = 0;
+  }
+
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-go]"); if (t) { go(t.dataset.go); return; }
+    const chip = e.target.closest(".chip");
+    if (chip && !chip.classList.contains("add")) {
+      if (chip.parentElement.dataset.group === "diet") {
+        chip.parentElement.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c === chip));
+        state.diet = chip.dataset.diet;
+      } else chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") !== "true");
+    }
+    const sw = e.target.closest(".switch, #s-alert .bigtoggle");
+    if (sw) sw.setAttribute("aria-checked", sw.getAttribute("aria-checked") !== "true");
+    const heart = e.target.closest(".heart");
+    if (heart) heart.setAttribute("aria-pressed", heart.getAttribute("aria-pressed") !== "true");
+  });
+
+  const season = document.getElementById("seasonToggle");
+  season.addEventListener("click", () => {
+    season.setAttribute("aria-checked", "true");
+    setTimeout(() => go("s-setup"), 650);
+  });
+
+  const budget = document.getElementById("budget");
+  budget.addEventListener("input", () => {
+    state.budget = +budget.value;
+    document.getElementById("budgetOut").textContent = state.budget >= 7 ? "Any" : eur(state.budget);
+    document.getElementById("alertPrice").textContent = state.budget >= 7 ? "Any price" : "Up to " + eur(state.budget);
+  });
+
+  document.getElementById("evToggle").addEventListener("change", e => document.body.classList.toggle("show-ev", e.target.checked));
+</script>
+</body>
+</html>

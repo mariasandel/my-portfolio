@@ -1,0 +1,443 @@
+<title>Observation Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: one-screen review desk. Sticky header + filter bar, then observation cards (left) beside the transcript they cite (right). Stacks top/bottom on phones. */
+:root {
+  --bg: #121417; --panel: #181b1f; --raised: #1f2328; --line: #2b3036; --fg: #e9e7e2; --muted: #9b9a95;
+  --approve: #86c99d; --approve-ink: #0f2a1a; --reject: #e5937f; --reject-ink: #3a140b;
+  --s: #86c99d; --w: #e2bf66; --i: #e5937f;
+  --note-bg: #2a2416; --note-line: #5b4a22; --note-ink: #e2bf66;
+  --mark: #6f7b88; --mark-on: rgba(226,191,102,.28);
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f4f3ef; --panel: #ffffff; --raised: #f8f7f4; --line: #e0ddd5; --fg: #1d1e20; --muted: #6a6964;
+  --approve: #2f8a55; --approve-ink: #ffffff; --reject: #c4553f; --reject-ink: #ffffff;
+  --s: #2f8a55; --w: #9a7410; --i: #c4553f;
+  --note-bg: #fbf3dc; --note-line: #e6d39c; --note-ink: #7a5b08;
+  --mark: #a8a49a; --mark-on: rgba(226,180,60,.32); color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f4f3ef; --panel: #ffffff; --raised: #f8f7f4; --line: #e0ddd5; --fg: #1d1e20; --muted: #6a6964;
+  --approve: #2f8a55; --approve-ink: #ffffff; --reject: #c4553f; --reject-ink: #ffffff;
+  --s: #2f8a55; --w: #9a7410; --i: #c4553f;
+  --note-bg: #fbf3dc; --note-line: #e6d39c; --note-ink: #7a5b08;
+  --mark: #a8a49a; --mark-on: rgba(226,180,60,.32); color-scheme: light;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; }
+.app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; }
+.bar { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.bar { padding-block: 14px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; border-bottom: 1px solid var(--line); background: var(--panel); }
+.title h1 { font-size: 15px; font-weight: 600; margin: 0; text-wrap: balance; }
+.title p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.progress { flex: 1 1 260px; min-width: 0; display: grid; gap: 6px; }
+.track { height: 6px; border-radius: 3px; background: var(--line); display: flex; overflow: hidden; }
+.track span { display: block; height: 100%; transition: width .2s; }
+.track .a { background: var(--approve); } .track .r { background: var(--reject); }
+.stats { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.stats b { color: var(--fg); font-weight: 600; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.saved { font-size: 12px; color: var(--muted); min-width: 64px; text-align: right; }
+.filters.bar { padding-block: 10px; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; border-bottom: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 12.5px; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+.chip .n { color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.chip[aria-pressed="true"] .n { color: var(--bg); opacity: .7; }
+.keys { margin-left: auto; font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; background: var(--raised); }
+.btn { font: inherit; font-size: 13px; border-radius: 6px; padding: 6px 14px; border: 1px solid var(--line); background: var(--raised); color: var(--fg); cursor: pointer; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.danger { color: var(--reject); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--w); outline-offset: 2px; }
+.banner { grid-column: 1 / -1; font-size: 13px; padding-block: 8px; background: var(--note-bg); color: var(--note-ink); border-bottom: 1px solid var(--note-line); }
+main { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
+.list, .doc { min-height: 0; overflow-y: auto; }
+.list { border-right: 1px solid var(--line); }
+.empty { padding: 40px 24px; color: var(--muted); }
+.card { padding: 16px max(16px, env(safe-area-inset-left, 0px)) 16px 20px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; cursor: pointer; }
+.card.sel { background: var(--raised); box-shadow: inset 3px 0 0 var(--w); }
+.card .head { display: flex; gap: 8px; font-weight: 600; line-height: 1.4; }
+.card .num { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 500; }
+.card.rejected .head .txt { text-decoration: line-through; color: var(--muted); }
+.card.rejected .num { color: var(--reject); }
+.quote { font-family: var(--serif); font-style: italic; color: var(--muted); line-height: 1.5; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 11.5px; }
+.ref { font-family: var(--mono); color: var(--muted); }
+.pill { border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 500; border: 1px solid currentColor; }
+.pill.S { color: var(--s); } .pill.W { color: var(--w); } .pill.I { color: var(--i); }
+.pill.approved { color: var(--approve); } .pill.rejected { color: var(--reject); } .pill.flag { color: var(--w); }
+.pill.was { color: var(--muted); }
+.inference { font-size: 12.5px; color: var(--muted); }
+.inference b { color: var(--w); font-weight: 500; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.approve[aria-pressed="true"] { background: var(--approve); border-color: var(--approve); color: var(--approve-ink); }
+.reject[aria-pressed="true"] { background: var(--reject); border-color: var(--reject); color: var(--reject-ink); }
+.approve { color: var(--approve); } .reject { color: var(--reject); }
+.tags { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.tags button { font: inherit; font-size: 12px; font-weight: 600; background: transparent; color: var(--muted); border: 0; padding: 6px 10px; cursor: pointer; }
+.tags button + button { border-left: 1px solid var(--line); }
+.tags button[aria-pressed="true"].S { background: var(--s); color: var(--bg); }
+.tags button[aria-pressed="true"].W { background: var(--w); color: var(--bg); }
+.tags button[aria-pressed="true"].I { background: var(--i); color: var(--bg); }
+.linkish { font: inherit; font-size: 12.5px; color: var(--muted); background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; padding: 4px 2px; }
+textarea { font: inherit; font-size: 13px; width: 100%; min-height: 56px; resize: vertical; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; box-sizing: border-box; }
+.doc { padding-block: 20px 60px; padding-left: max(16px, 28px); padding-right: max(16px, env(safe-area-inset-right, 0px), 28px); }
+.doc h2 { font-size: 15px; margin: 0 0 4px; }
+.doc .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 20px; }
+.turn { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 12px; padding-block: 14px; border-top: 1px solid var(--line); }
+.turn .an { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 2px; }
+.turn .q { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.turn .q b { color: var(--fg); font-weight: 600; }
+.turn .body { grid-column: 2; display: grid; gap: 12px; max-width: 68ch; }
+.turn p { font-family: var(--serif); font-size: 16px; line-height: 1.6; margin: 0; }
+.note { font-size: 13px; line-height: 1.55; font-style: italic; background: var(--note-bg); border: 1px solid var(--note-line); border-radius: 6px; padding: 10px 12px; color: var(--fg); }
+.note::before { content: "Observer note. "; font-style: normal; font-weight: 600; color: var(--note-ink); }
+mark.anc { background: none; color: inherit; text-decoration: underline; text-decoration-color: var(--mark); text-underline-offset: 4px; text-decoration-thickness: 1px; cursor: pointer; border-radius: 2px; }
+mark.anc.on { background: var(--mark-on); text-decoration-color: var(--w); text-decoration-thickness: 2px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px; max-width: calc(100% - 32px); }
+@media (max-width: 760px) {
+  main { grid-template-columns: minmax(0, 1fr); grid-template-rows: 55% 45%; }
+  .list { border-right: 0; border-bottom: 2px solid var(--line); }
+  .keys { display: none; }
+  .doc { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { .track span { transition: none; } }
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="title"><h1>Observation review</h1><p id="sub">Loading observations…</p></div>
+    <div class="progress">
+      <div class="track" aria-hidden="true"><span class="a" id="barA"></span><span class="r" id="barR"></span></div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="actions">
+      <span class="saved" id="saved" aria-live="polite"></span>
+      <span id="clearBox"><button class="btn danger" id="clearBtn" type="button">Clear decisions</button></span>
+    </div>
+  </header>
+  <div class="filters bar">
+    <div class="chips" id="pChips" role="group" aria-label="Participant"></div>
+    <div class="chips" id="sChips" role="group" aria-label="Status"></div>
+    <div class="keys"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>A</kbd> approve</span><span><kbd>X</kbd> reject</span><span><kbd>S</kbd> <kbd>W</kbd> <kbd>I</kbd> tag</span><span><kbd>C</kbd> comment</span></div>
+  </div>
+  <main>
+    <section class="list" id="list" aria-label="Observations"><div class="empty">Loading observations and transcripts…</div></section>
+    <section class="doc" id="doc" aria-label="Transcript"></section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  let DATA = null, OBS = [], BY_ID = {}, PART = {};
+  let decisions = {}, local = {};
+  let db = null, readOnly = false, dbReady = false;
+  let fP = "all", fS = "any", selected = null, shownPart = null, visible = [];
+  const writeChains = {};
+
+  // ---------- state ----------
+  function eff(o) {
+    const d = local[o.id] || decisions[o.id];
+    if (d && d.anchor === o.anchor) {
+      return { status: d.status || null, tag: d.tag || o.tag, comment: d.comment ?? o.comment ?? "" };
+    }
+    return { status: o.approved ? "approved" : null, tag: o.tag, comment: o.comment || "" };
+  }
+  const statusOf = (o) => eff(o).status || "todo";
+  const flagged = (o) => o.approx || !o.spans.length;
+
+  // ---------- load ----------
+  fetch("data.json").then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((d) => {
+    DATA = d;
+    d.participants.forEach((p) => {
+      PART[p.id] = p;
+      p.observations.forEach((o, i) => { o.pid = p.id; o.n = i + 1; OBS.push(o); BY_ID[o.id] = o; });
+    });
+    $("sub").textContent = `${d.project} · ${d.participants.length} interview${d.participants.length === 1 ? "" : "s"} · built ${d.generated}`;
+    try { const s = JSON.parse(localStorage.getItem("review-filters") || "{}"); if (s.p && (s.p === "all" || PART[s.p])) fP = s.p; if (s.s) fS = s.s; } catch (e) {}
+    buildChips(); buildList(); updateHeader();
+    connect();
+  }).catch(() => {
+    $("list").innerHTML = '<div class="empty">The observation data did not load. Ask Claude to run /review-observations again to rebuild the page.</div>';
+  });
+
+  async function connect() {
+    try { db = window.claude && await window.claude.use("db"); } catch (e) { db = null; }
+    if (!db) { setReadOnly("Decisions can't be saved in this view. Open the page on claude.ai while signed in to review."); return; }
+    db.collection("decisions").limit(1000).onSnapshot((snap) => {
+      const changed = new Set();
+      snap.docChanges().forEach((ch) => {
+        const id = ch.doc.id;
+        if (ch.type === "removed") delete decisions[id]; else decisions[id] = ch.doc.data();
+        if (local[id] && decisions[id] && local[id].updatedAt === decisions[id].updatedAt) delete local[id];
+        changed.add(id);
+      });
+      dbReady = true;
+      changed.forEach((id) => BY_ID[id] && updateCard(BY_ID[id]));
+      refreshCounts();
+    }, (e) => { if (e.code === "revoked" || e.code === "not_granted") setReadOnly("This view can no longer save decisions."); });
+  }
+
+  function setReadOnly(msg) {
+    readOnly = true;
+    const b = document.createElement("div"); b.className = "banner bar"; b.textContent = msg;
+    document.querySelector(".app").insertBefore(b, document.querySelector("main"));
+    document.querySelector(".app").style.gridTemplateRows = "auto auto auto 1fr";
+    document.querySelectorAll(".card button, .card textarea, #clearBtn").forEach((el) => (el.disabled = true));
+  }
+
+  // ---------- writes ----------
+  function save(o, patch) {
+    if (readOnly) return;
+    const cur = eff(o);
+    const next = { status: cur.status, tag: cur.tag, comment: cur.comment, ...patch, anchor: o.anchor, updatedAt: new Date().toISOString() };
+    if (next.tag === "I") next.status = "rejected";
+    local[o.id] = next;
+    updateCard(o); refreshCounts();
+    if (!db) return;
+    $("saved").textContent = "Saving…";
+    const body = { status: next.status ?? null, tag: next.tag, comment: next.comment || "", anchor: o.anchor, updatedAt: next.updatedAt };
+    writeChains[o.id] = (writeChains[o.id] || Promise.resolve()).then(() => db.collection("decisions").doc(o.id).set(body)).then(() => {
+      $("saved").textContent = "Saved";
+    }).catch((e) => {
+      delete local[o.id]; updateCard(o); refreshCounts();
+      $("saved").textContent = "";
+      if (e && e.code === "invalid_argument") setReadOnly("You can view this page but not save decisions. Ask the owner for Contributor access.");
+      else toast(`${o.id} was not saved (${e && e.code || "error"}). Try again.`);
+    });
+  }
+
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 3500); }
+
+  // ---------- chips ----------
+  function inPart(o) { return fP === "all" || o.pid === fP; }
+  function matches(o) {
+    if (!inPart(o)) return false;
+    if (fS === "any") return true;
+    if (fS === "flag") return flagged(o);
+    return statusOf(o) === fS;
+  }
+  function buildChips() {
+    const pc = $("pChips"); pc.innerHTML = "";
+    const mk = (box, key, label, cur, onClick) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.dataset.key = key;
+      b.innerHTML = `${esc(label)}<span class="n"></span>`; b.setAttribute("aria-pressed", String(cur === key));
+      b.addEventListener("click", () => onClick(key)); box.appendChild(b);
+    };
+    mk(pc, "all", "All", fP, setP);
+    DATA.participants.forEach((p) => mk(pc, p.id, `${p.id} ${p.name}`, fP, setP));
+    const sc = $("sChips"); sc.innerHTML = "";
+    [["any", "Any status"], ["todo", "To review"], ["approved", "Approved"], ["rejected", "Rejected"], ["flag", "Flagged"]].forEach(([k, l]) => mk(sc, k, l, fS, setS));
+    refreshCounts();
+  }
+  function setP(k) { fP = k; remember(); buildChips(); buildList(); }
+  function setS(k) { fS = k; remember(); buildChips(); buildList(); }
+  function remember() { try { localStorage.setItem("review-filters", JSON.stringify({ p: fP, s: fS })); } catch (e) {} }
+
+  function refreshCounts() {
+    if (!DATA) return;
+    $("pChips").querySelectorAll(".chip").forEach((b) => {
+      const k = b.dataset.key; b.querySelector(".n").textContent = OBS.filter((o) => k === "all" || o.pid === k).length;
+    });
+    $("sChips").querySelectorAll(".chip").forEach((b) => {
+      const k = b.dataset.key;
+      b.querySelector(".n").textContent = OBS.filter((o) => inPart(o) && (k === "any" || (k === "flag" ? flagged(o) : statusOf(o) === k))).length;
+    });
+    updateHeader();
+  }
+
+  function updateHeader() {
+    const all = OBS.filter(inPart);
+    const a = all.filter((o) => statusOf(o) === "approved").length;
+    const r = all.filter((o) => statusOf(o) === "rejected").length;
+    const t = all.length || 1;
+    $("barA").style.width = (a / t * 100) + "%"; $("barR").style.width = (r / t * 100) + "%";
+    const scope = fP === "all" ? "" : ` in ${fP}`;
+    $("stats").innerHTML = `<span><b>${a}</b> approved</span><span><b>${r}</b> rejected</span><span><b>${all.length - a - r}</b> to review${scope}</span><span><b>${all.filter(flagged).length}</b> flagged approximate</span>`;
+    $("clearBtn").textContent = fP === "all" ? "Clear decisions" : `Clear ${fP} decisions`;
+  }
+
+  // ---------- list ----------
+  function buildList() {
+    visible = OBS.filter(matches);
+    const list = $("list"); list.innerHTML = "";
+    if (!visible.length) { list.innerHTML = '<div class="empty">No observations match this filter.</div>'; renderDoc(fP === "all" ? DATA.participants[0].id : fP); return; }
+    const frag = document.createDocumentFragment();
+    visible.forEach((o) => { const c = document.createElement("article"); c.className = "card"; c.id = "c-" + o.id; c.dataset.id = o.id; frag.appendChild(c); fillCard(c, o); });
+    list.appendChild(frag);
+    if (!selected || !visible.includes(BY_ID[selected])) {
+      const first = visible.find((o) => statusOf(o) === "todo") || visible[0];
+      select(first.id, false);
+    } else select(selected, false);
+  }
+
+  function fillCard(c, o) {
+    const e = eff(o), st = e.status || "todo";
+    c.className = "card" + (st === "rejected" ? " rejected" : "") + (selected === o.id ? " sel" : "");
+    const tagName = { S: "Supported", W: "Weak", I: "Invented" }[e.tag];
+    const was = e.tag !== o.tag ? `<span class="pill was">was ${o.tag}</span>` : "";
+    const stPill = st === "approved" ? '<span class="pill approved">Approved</span>' : st === "rejected" ? '<span class="pill rejected">Rejected</span>' : "";
+    const flags = (o.approx ? '<span class="pill flag">⚠ Approximate</span>' : "") + (!o.spans.length ? '<span class="pill flag">Anchor not found</span>' : "");
+    const inf = e.tag === "W" ? (o.inference ? `<div class="inference"><b>Inference:</b> ${esc(o.inference)}</div>` : `<div class="inference"><b>Inference:</b> Claude writes one when you sync.</div>`) : "";
+    const hasC = !!e.comment;
+    c.innerHTML = `
+      <div class="head"><span class="num">${o.n}.</span><span class="txt">${esc(o.text)}</span></div>
+      <div class="quote">“${esc(o.anchor)}”</div>
+      ${inf}
+      <div class="meta"><span class="ref">${o.id} · ${esc(o.turn)}</span><span class="pill ${e.tag}">${e.tag} · ${tagName}</span>${was}${flags}${stPill}</div>
+      <div class="controls">
+        <button type="button" class="btn approve" data-act="approve" aria-pressed="${st === "approved"}">Approve</button>
+        <button type="button" class="btn reject" data-act="reject" aria-pressed="${st === "rejected"}">Reject</button>
+        <span class="tags" role="group" aria-label="Evidence tag">${["S", "W", "I"].map((t) => `<button type="button" class="${t}" data-tag="${t}" aria-pressed="${e.tag === t}" title="${{ S: "Supported", W: "Weak", I: "Invented: removed on sync" }[t]}">${t}</button>`).join("")}</span>
+        <button type="button" class="linkish" data-act="comment">${hasC ? "Edit comment" : "Add comment"}</button>
+      </div>
+      <div class="cbox" ${hasC ? "" : "hidden"}><textarea id="t-${o.id}" placeholder="Note for Claude about this observation" aria-label="Comment for Claude on ${o.id}">${esc(e.comment)}</textarea></div>`;
+    if (readOnly) c.querySelectorAll("button, textarea").forEach((el) => (el.disabled = true));
+  }
+
+  function updateCard(o) {
+    const c = $("c-" + o.id); if (!c) return;
+    const ta = c.querySelector("textarea");
+    if (ta && document.activeElement === ta) return; // don't clobber typing
+    fillCard(c, o);
+  }
+
+  $("list").addEventListener("click", (ev) => {
+    const card = ev.target.closest(".card"); if (!card) return;
+    const o = BY_ID[card.dataset.id];
+    if (selected !== o.id) select(o.id, true);
+    const b = ev.target.closest("button"); if (!b || b.disabled) return;
+    if (b.dataset.act === "approve") save(o, { status: eff(o).status === "approved" ? null : "approved" });
+    else if (b.dataset.act === "reject") toggleReject(o);
+    else if (b.dataset.tag) setTag(o, b.dataset.tag);
+    else if (b.dataset.act === "comment") openComment(o);
+  });
+  $("list").addEventListener("input", (ev) => {
+    if (ev.target.tagName !== "TEXTAREA") return;
+    const o = BY_ID[ev.target.closest(".card").dataset.id];
+    clearTimeout(ev.target._h); ev.target._h = setTimeout(() => save(o, { comment: ev.target.value }), 800);
+  });
+  $("list").addEventListener("focusout", (ev) => {
+    if (ev.target.tagName !== "TEXTAREA") return;
+    const o = BY_ID[ev.target.closest(".card").dataset.id];
+    clearTimeout(ev.target._h);
+    if (ev.target.value !== eff(o).comment) save(o, { comment: ev.target.value });
+    setTimeout(() => updateCard(o), 0);
+  });
+
+  function setTag(o, t) {
+    const e = eff(o);
+    if (t === e.tag) return;
+    const patch = { tag: t };
+    if (t === "I") patch.status = "rejected";
+    else if (e.tag === "I" && e.status === "rejected") patch.status = null;
+    save(o, patch);
+  }
+  function toggleReject(o) {
+    const e = eff(o);
+    if (e.status !== "rejected") return save(o, { status: "rejected" });
+    // Un-rejecting an observation tagged I puts its original tag back (I always means removed).
+    save(o, { status: null, ...(e.tag === "I" ? { tag: o.tag === "I" ? "W" : o.tag } : {}) });
+  }
+  function openComment(o) {
+    const c = $("c-" + o.id); const box = c.querySelector(".cbox"); box.hidden = false;
+    const ta = c.querySelector("textarea"); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+
+  // ---------- selection + transcript ----------
+  function select(id, scrollDoc) {
+    const prev = selected && $("c-" + selected); if (prev) prev.classList.remove("sel");
+    selected = id;
+    const o = BY_ID[id]; const c = $("c-" + id);
+    if (c) c.classList.add("sel");
+    if (shownPart !== o.pid) renderDoc(o.pid);
+    document.querySelectorAll("mark.anc.on").forEach((m) => m.classList.remove("on"));
+    const marks = [...document.querySelectorAll("mark.anc")].filter((m) => m.dataset.ids.split(" ").includes(id));
+    marks.forEach((m) => m.classList.add("on"));
+    if (marks[0]) marks[0].scrollIntoView({ block: "center", behavior: scrollDoc && !matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto" });
+  }
+
+  function renderDoc(pid) {
+    shownPart = pid;
+    const p = PART[pid];
+    const spans = {};
+    p.observations.forEach((o) => o.spans.forEach((s) => { (spans[s.t + "-" + s.p] ||= []).push({ s: s.s, e: s.e, id: o.id }); }));
+    const para = (t, i, text) => {
+      const list = spans[t + "-" + i]; if (!list) return esc(text);
+      const cuts = [...new Set([0, text.length, ...list.flatMap((x) => [x.s, x.e])])].sort((a, b) => a - b);
+      let out = "";
+      for (let k = 0; k < cuts.length - 1; k++) {
+        const a = cuts[k], b = cuts[k + 1], seg = esc(text.slice(a, b));
+        const ids = list.filter((x) => x.s <= a && x.e >= b).map((x) => x.id);
+        out += ids.length ? `<mark class="anc" data-ids="${ids.join(" ")}">${seg}</mark>` : seg;
+      }
+      return out;
+    };
+    const turns = p.turns.map((t) => `
+      <div class="turn" id="turn-${t.n}">
+        <div class="an">A${t.n}</div>
+        <div class="q"><b>Interviewer:</b> ${esc(t.q)}</div>
+        <div class="body">${t.paras.map((x, i) => x.kind === "note" ? `<div class="note">${para(t.n, i, x.text)}</div>` : `<p>${para(t.n, i, x.text)}</p>`).join("")}</div>
+      </div>`).join("");
+    $("doc").innerHTML = `<h2>${esc(p.id)} — ${esc(p.profile)}</h2><p class="sub">${esc(p.frequency)}. Interviewed ${esc(p.date)}. Transcript section only.</p>${turns}`;
+    $("doc").scrollTop = 0;
+  }
+
+  $("doc").addEventListener("click", (ev) => {
+    const m = ev.target.closest("mark.anc"); if (!m) return;
+    const ids = m.dataset.ids.split(" ");
+    const i = ids.indexOf(selected);
+    const next = ids[(i + 1) % ids.length];
+    if (!$("c-" + next)) { fS = "any"; if (fP !== "all") fP = BY_ID[next].pid; buildChips(); buildList(); }
+    select(next, false);
+    $("c-" + next).scrollIntoView({ block: "nearest" });
+  });
+
+  // ---------- keyboard ----------
+  document.addEventListener("keydown", (ev) => {
+    if (!DATA || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest && ev.target.closest("textarea, input")) { if (ev.key === "Escape") ev.target.blur(); return; }
+    const o = BY_ID[selected]; if (!o) return;
+    const i = visible.indexOf(o);
+    const move = (d) => { const n = visible[i + d]; if (n) { select(n.id, true); $("c-" + n.id).scrollIntoView({ block: "nearest" }); } };
+    const k = ev.key.toLowerCase();
+    if (k === "arrowdown" || k === "j") { ev.preventDefault(); move(1); }
+    else if (k === "arrowup" || k === "k") { ev.preventDefault(); move(-1); }
+    else if (readOnly) return;
+    else if (k === "a") { save(o, { status: eff(o).status === "approved" ? null : "approved" }); move(1); }
+    else if (k === "x") { toggleReject(o); move(1); }
+    else if (k === "s" || k === "w" || k === "i") setTag(o, k.toUpperCase());
+    else if (k === "c") { ev.preventDefault(); openComment(o); }
+  });
+
+  // ---------- clear ----------
+  function onClear() {
+    const scope = OBS.filter((o) => inPart(o) && (decisions[o.id] || local[o.id]));
+    const box = $("clearBox");
+    if (!scope.length) { toast("There are no saved decisions to clear here."); return; }
+    box.innerHTML = `<span class="saved">Clear ${scope.length}?</span> <button class="btn danger" id="clearYes" type="button">Clear</button> <button class="btn" id="clearNo" type="button">Keep</button>`;
+    const restore = () => { box.innerHTML = '<button class="btn danger" id="clearBtn" type="button">Clear decisions</button>'; $("clearBtn").addEventListener("click", onClear); updateHeader(); };
+    $("clearNo").onclick = restore;
+    $("clearYes").onclick = async () => {
+      $("saved").textContent = "Clearing…";
+      for (const o of scope) {
+        delete local[o.id];
+        try { await (writeChains[o.id] || Promise.resolve()); await db.collection("decisions").doc(o.id).delete(); } catch (e) {}
+      }
+      $("saved").textContent = "Cleared";
+      restore(); buildList();
+    };
+  }
+  $("clearBtn").addEventListener("click", onClear);
+})();
+</script>

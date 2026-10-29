@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kiezkarte Pumpkin Prototype</title>
+<!--
+  Early mobile prototype (low–mid fidelity) · Project: Buying a Pumpkin Spice Latte in Berlin · 2026-10-29
+  Built from the observations in 01 Discover/Primary Research/Processed, the selected HMW (D12),
+  the personas Sam and Felix (D11) and 03 Develop/03_Platform-Constraints.md.
+  Café names and data are invented. "Show evidence" tags each element with the observation it answers.
+-->
+<style>
+  :root {
+    --bg: #ecebe8;
+    --phone: #ffffff;
+    --ink: #1d1d1b;
+    --muted: #6b6a66;
+    --line: #dddcd7;
+    --soft: #f5f4f1;
+    --accent: #d9661f;
+    --accent-soft: #fbeadf;
+    --ok: #2f7a45;
+    --ok-soft: #e3f1e7;
+    --warn: #a3401c;
+    --warn-soft: #f8e1d8;
+    --ev: #3b4fd1;
+    --ev-soft: #e5e8fb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --phone: #1f1f1d; --ink: #f0efe9; --muted: #a3a29c; --line: #34332f; --soft: #2a2926;
+      --accent: #f08a45; --accent-soft: #3d2618; --ok: #6cc489; --ok-soft: #1c3324; --warn: #f0906a; --warn-soft: #3d221a;
+      --ev: #9aa8ff; --ev-soft: #232846;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  }
+  .toolbar {
+    width: 100%; max-width: 420px; padding: 14px 16px 10px; display: flex; gap: 10px;
+    align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted);
+  }
+  .toolbar strong { color: var(--ink); }
+  .ev-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .ev-toggle input { accent-color: var(--ev); width: 16px; height: 16px; }
+
+  .phone {
+    width: 390px; max-width: 100%; height: 800px; background: var(--phone);
+    border-radius: 36px; border: 1px solid var(--line); overflow: hidden; position: relative;
+    box-shadow: 0 20px 50px rgba(0,0,0,.12); margin-bottom: 32px; display: flex; flex-direction: column;
+  }
+  @media (max-width: 460px) {
+    .phone { width: 100%; height: auto; min-height: calc(100vh - 48px); border-radius: 0; border: 0; box-shadow: none; margin: 0; }
+    .toolbar { padding: 10px 16px; }
+  }
+  .status { height: 34px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 12px; font-weight: 600; }
+  .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .screen.active { display: flex; }
+  .scroll { flex: 1; overflow-y: auto; padding: 4px 16px 24px; }
+  .appbar { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px 8px 16px; min-height: 48px; }
+  .appbar h1 { font-size: 17px; margin: 0; flex: 1; }
+  .back { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; padding: 6px 4px; cursor: pointer; }
+  .lang { border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 8px; font: inherit; font-size: 12px; padding: 4px 8px; }
+
+  h2 { font-size: 24px; line-height: 1.2; margin: 8px 0 6px; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 22px 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 8px; }
+  .small { font-size: 12px; color: var(--muted); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--phone); color: var(--ink); border-radius: 999px;
+    padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--phone); border-color: var(--ink); }
+
+  .btn {
+    display: block; width: 100%; border: 0; border-radius: 14px; padding: 15px; font: inherit; font-weight: 600;
+    background: var(--accent); color: #fff; cursor: pointer; text-align: center;
+  }
+  .btn.ghost { background: var(--soft); color: var(--ink); }
+  .footer { flex: none; padding: 12px 16px 20px; border-top: 1px solid var(--line); background: var(--phone); }
+
+  .consent { border: 1px dashed var(--line); border-radius: 14px; padding: 12px; margin-top: 10px; background: var(--soft); }
+  .consent .row { display: flex; gap: 10px; align-items: flex-start; }
+
+  .range { display: flex; align-items: center; gap: 12px; }
+  .range input { flex: 1; accent-color: var(--accent); }
+  .range output { font-weight: 700; min-width: 56px; text-align: right; }
+
+  .banner { background: var(--accent-soft); border-radius: 14px; padding: 12px 14px; margin: 4px 0 14px; display: flex; gap: 10px; align-items: center; }
+  .banner .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex: none; }
+
+  .card {
+    border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 12px; cursor: pointer;
+    background: var(--phone); text-align: left; width: 100%; font: inherit; color: inherit; display: block;
+  }
+  .card.dim { opacity: .55; }
+  .card-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .card-top .name { font-weight: 700; font-size: 16px; }
+  .price { font-weight: 700; font-size: 16px; white-space: nowrap; }
+  .meta { color: var(--muted); font-size: 13px; margin: 2px 0 10px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 12px; border-radius: 6px; padding: 3px 8px; background: var(--soft); color: var(--ink); }
+  .tag.ok { background: var(--ok-soft); color: var(--ok); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .fresh { font-size: 12px; color: var(--muted); margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+  .fresh.old { color: var(--warn); }
+
+  .hero { background: var(--soft); border-radius: 18px; padding: 16px; margin: 4px 0 6px; }
+  .hero .verdict { display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: 17px; margin-top: 10px; }
+  .hero .verdict .icon { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; flex: none; font-size: 15px; }
+  .verdict.ok .icon { background: var(--ok); }
+  .verdict.warn .icon { background: var(--warn); }
+  .verdict.ok { color: var(--ok); }
+  .verdict.warn { color: var(--warn); }
+
+  .parts { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .part { display: flex; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); align-items: flex-start; }
+  .part:first-child { border-top: 0; }
+  .part .label { width: 92px; flex: none; color: var(--muted); font-size: 13px; padding-top: 1px; }
+  .part .value { flex: 1; }
+  .part .value b { display: block; }
+
+  .sweet { display: flex; gap: 4px; margin-top: 4px; }
+  .sweet i { width: 22px; height: 6px; border-radius: 3px; background: var(--line); display: block; }
+  .sweet i.on { background: var(--accent); }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .compare div { background: var(--soft); border-radius: 14px; padding: 12px; }
+  .compare .big { font-size: 22px; font-weight: 700; }
+
+  .tip { border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--accent-soft); border-radius: 0 12px 12px 0; margin-top: 12px; font-size: 14px; }
+
+  .switch-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .switch { width: 50px; height: 30px; border-radius: 15px; background: var(--line); border: 0; position: relative; cursor: pointer; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .switch[aria-checked="true"] { background: var(--ok); }
+  .switch[aria-checked="true"]::after { left: 23px; }
+
+  .notif { background: var(--soft); border-radius: 18px; padding: 12px 14px; display: flex; gap: 10px; margin-top: 8px; }
+  .notif .appicon { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; flex: none; }
+
+  /* Evidence layer */
+  .ev { display: none; }
+  body.show-ev .ev {
+    display: inline-block; font-size: 10.5px; font-weight: 600; line-height: 1.3; color: var(--ev); background: var(--ev-soft);
+    border-radius: 5px; padding: 2px 6px; margin: 4px 4px 0 0; vertical-align: middle; text-transform: none; letter-spacing: 0;
+  }
+  body.show-ev [data-ev-box] { outline: 1.5px dashed var(--ev); outline-offset: 3px; border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span><strong>Kiezkarte</strong> · early prototype</span>
+  <label class="ev-toggle"><input type="checkbox" id="evToggle"> Show evidence</label>
+</div>
+
+<div class="phone">
+  <div class="status"><span>8:12</span><span>●●● ◔</span></div>
+
+  <!-- 1 · Setup -->
+  <section class="screen active" id="s-setup">
+    <div class="appbar"><h1>Pumpkin season</h1><button class="lang" title="German and English (platform constraint); only English is filled in this prototype">EN · DE</button></div>
+    <div class="scroll">
+      <h2>Know what you're getting before you reach the counter.</h2>
+      <p class="lead">Three quick questions, so we only show what fits you.</p>
+
+      <h3>Where do you pass by? <span class="ev">P01-O18 commute thing</span><span class="ev">P01-O19 not on my way = not happening</span></h3>
+      <div class="chips" data-group="route" data-ev-box>
+        <button class="chip" aria-pressed="true">U Warschauer Str.</button>
+        <button class="chip" aria-pressed="true">Boxhagener Platz</button>
+        <button class="chip" aria-pressed="false">Kottbusser Tor</button>
+        <button class="chip" aria-pressed="false">Weserstraße</button>
+        <button class="chip" aria-pressed="false">+ Add stop</button>
+      </div>
+      <div class="consent">
+        <div class="row">
+          <button class="switch" role="switch" aria-checked="false" id="locSwitch" aria-label="Use my location"></button>
+          <div><b>Use my location instead</b><div class="small">Only while the app is open. Off by default; we ask before turning it on.</div>
+          <span class="ev">Constraint: GDPR, no tracking without consent</span></div>
+        </div>
+      </div>
+
+      <h3>Anything you can't have? <span class="ev">P03-O11 lactose intolerant</span><span class="ev">P04-O03 vegan</span></h3>
+      <div class="chips" data-group="diet" data-ev-box>
+        <button class="chip" aria-pressed="true" data-diet="dairy">No dairy</button>
+        <button class="chip" aria-pressed="false" data-diet="vegan">Vegan</button>
+        <button class="chip" aria-pressed="false" data-diet="none">Nothing</button>
+      </div>
+      <p class="small" style="margin-top:8px">We check the sauce and syrup, not just the milk. <span class="ev">P03-O13 dairy was in the sauce</span><span class="ev">P04-O11 oat milk doesn't help</span></p>
+
+      <h3>What's it worth to you? <span class="ev">P02-O12 checks price first</span><span class="ev">P02-O21 "maybe four euros"</span></h3>
+      <div class="range" data-ev-box>
+        <input type="range" id="budget" min="3.5" max="7" step="0.1" value="7" aria-label="Most I'd pay">
+        <output id="budgetOut">Any</output>
+      </div>
+      <p class="small">Most you'd pay for one. Slide to the end for "any price". <span class="ev">P03-O17 "I'd pay anything"</span></p>
+    </div>
+    <div class="footer"><button class="btn" data-go="s-list">Show cafés on my way</button></div>
+  </section>
+
+  <!-- 2 · List -->
+  <section class="screen" id="s-list">
+    <div class="appbar"><button class="back" data-go="s-setup">‹ Edit</button><h1>On your way</h1><span class="small" id="filterSummary"></span></div>
+    <div class="scroll">
+      <div class="banner" data-ev-box>
+        <span class="dot"></span>
+        <div><b>It's back.</b> 3 cafés on your way have it this week.
+          <div><span class="ev">P01-O04 "never know if it's back"</span></div></div>
+      </div>
+      <div id="cards"></div>
+      <p class="small">Only independent cafés. Every detail comes from the café itself. <span class="ev">Constraint: independent only, café-sourced data (D08)</span></p>
+    </div>
+    <div class="footer"><button class="btn ghost" data-go="s-alert">🔔 Tell me when it's back somewhere new</button></div>
+  </section>
+
+  <!-- 3 · Detail -->
+  <section class="screen" id="s-detail">
+    <div class="appbar"><button class="back" data-go="s-list">‹ On your way</button><h1></h1></div>
+    <div class="scroll" id="detail"></div>
+    <div class="footer"><button class="btn" id="goBtn">Directions · 2 min off your route</button></div>
+  </section>
+
+  <!-- 4 · Alert -->
+  <section class="screen" id="s-alert">
+    <div class="appbar"><button class="back" data-go="s-list">‹ On your way</button><h1>Season alerts</h1></div>
+    <div class="scroll">
+      <h2>Stop checking the boards.</h2>
+      <p class="lead">We'll tell you when a café on your way puts it on. <span class="ev">P01-O03 checks chalkboards</span><span class="ev">P01-O20 "out of habit"</span><span class="ev">P03-O06 old Instagram post</span></p>
+
+      <div class="switch-row" data-ev-box>
+        <div><b>When it's back on my way</b><div class="small">Cafés near U Warschauer Str., Boxhagener Platz</div></div>
+        <button class="switch" role="switch" aria-checked="true" aria-label="When it's back on my way"></button>
+      </div>
+      <div class="switch-row" data-ev-box>
+        <div><b>Only if it's safe for me</b><div class="small">No dairy in milk, sauce or syrup</div><span class="ev">P04-O16 "where I can check what's in it"</span></div>
+        <button class="switch" role="switch" aria-checked="true" aria-label="Only if it's safe for me"></button>
+      </div>
+      <div class="switch-row" data-ev-box>
+        <div><b>Only within my price</b><div class="small" id="alertPrice">Any price</div><span class="ev">P02-O20 "more than double my flat white"</span></div>
+        <button class="switch" role="switch" aria-checked="false" aria-label="Only within my price"></button>
+      </div>
+      <div class="switch-row">
+        <div><b>End-of-season reminder</b><div class="small">"Last week at Café Lindgrün"</div><span class="ev">P03-O15 once-a-year ritual</span></div>
+        <button class="switch" role="switch" aria-checked="false" aria-label="End-of-season reminder"></button>
+      </div>
+
+      <h3>What you'll get</h3>
+      <div class="notif" data-ev-box>
+        <div class="appicon">K</div>
+        <div><b>It's back at Café Lindgrün 🎃</b><div class="small">Boxhagener Platz · 2 min off your route · sauce is dairy-free · €5.20</div></div>
+      </div>
+      <p class="small" style="margin-top:10px">The café turns it on with one tap when it goes on the board — before opening, not during the rush. <span class="ev">Constraint: no extra steps in the morning rush</span></p>
+    </div>
+    <div class="footer"><button class="btn" data-go="s-list">Save alerts</button></div>
+  </section>
+</div>
+
+<script>
+  const cafes = [
+    { id: "lindgruen", name: "Café Lindgrün", kiez: "Friedrichshain", near: "Boxhagener Platz", detour: 2, price: 5.2, flatWhite: 3.4,
+      base: "House-made: roasted Hokkaido, cinnamon, ginger, nutmeg", realPumpkin: true,
+      sauceDairy: false, sauceVegan: true, milk: "Oat by default · cow's milk on request", sweet: 2, size: "300 ml",
+      updated: "today, 7:40", fresh: true, open: "Open until 18:00" },
+    { id: "eckbohne", name: "Eckbohne", kiez: "Friedrichshain", near: "U Warschauer Str.", detour: 0, price: 4.2, flatWhite: 3.2,
+      base: "Pumpkin spice syrup (bottled), no real pumpkin", realPumpkin: false,
+      sauceDairy: false, sauceVegan: true, milk: "Oat, soy or cow's milk", sweet: 4, size: "300 ml",
+      updated: "2 days ago", fresh: true, open: "Open until 17:00" },
+    { id: "kastanie", name: "Rösterei Kastanie", kiez: "Friedrichshain", near: "Boxhagener Platz", detour: 4, price: 5.8, flatWhite: 3.6,
+      base: "Pumpkin sauce with condensed milk", realPumpkin: false,
+      sauceDairy: true, sauceVegan: false, altSyrup: "Dairy-free pumpkin syrup: ask for “PSL dairy-free”", milk: "Oat or cow's milk", sweet: 4, size: "350 ml",
+      updated: "5 days ago", fresh: true, open: "Open until 19:00" },
+    { id: "morgenrot", name: "Morgenrot", kiez: "Kreuzberg", near: "Kottbusser Tor", detour: 9, price: 6.5, flatWhite: 3.5,
+      base: "House sauce: pumpkin purée, condensed milk, spices", realPumpkin: true,
+      sauceDairy: true, sauceVegan: false, milk: "Oat or cow's milk", sweet: 3, size: "350 ml",
+      updated: "16 days ago", fresh: false, open: "Open until 18:00" }
+  ];
+
+  const state = { diet: "dairy", budget: 7 };
+  const eur = n => "€" + n.toFixed(2).replace(".", ",");
+  const ev = t => `<span class="ev">${t}</span>`;
+
+  function safety(c) {
+    if (state.diet === "none") return { ok: true, label: null };
+    const bad = state.diet === "vegan" ? !c.sauceVegan : c.sauceDairy;
+    const what = state.diet === "vegan" ? "vegan" : "dairy-free";
+    if (!bad) return { ok: true, label: `Sauce is ${what}` };
+    return { ok: false, label: "Sauce contains milk", alt: c.altSyrup };
+  }
+  const inBudget = c => state.budget >= 7 || c.price <= state.budget;
+
+  function renderList() {
+    const sorted = [...cafes].sort((a, b) => {
+      const sa = safety(a), sb = safety(b);
+      const ra = (sa.ok || sa.alt ? 0 : 2) + (inBudget(a) ? 0 : 1);
+      const rb = (sb.ok || sb.alt ? 0 : 2) + (inBudget(b) ? 0 : 1);
+      return ra - rb || a.detour - b.detour;
+    });
+    document.getElementById("cards").innerHTML = sorted.map((c, i) => {
+      const s = safety(c);
+      const over = !inBudget(c);
+      const dim = (!s.ok && !s.alt) || over;
+      const tags = [];
+      if (s.label) tags.push(`<span class="tag ${s.ok ? "ok" : "warn"}">${s.ok ? "✓" : "✕"} ${s.label}</span>`);
+      if (!s.ok && s.alt) tags.push(`<span class="tag ok">✓ Dairy-free syrup on request</span>`);
+      tags.push(`<span class="tag">${c.realPumpkin ? "Real pumpkin" : "Spice syrup, no pumpkin"}</span>`);
+      if (over) tags.push(`<span class="tag warn">Over your ${eur(state.budget)}</span>`);
+      return `<button class="card ${dim ? "dim" : ""}" data-cafe="${c.id}" ${i === 0 ? "data-ev-box" : ""}>
+        <div class="card-top"><span class="name">${c.name}</span><span class="price">${eur(c.price)}</span></div>
+        <div class="meta">${c.near} · ${c.detour === 0 ? "on your route" : c.detour + " min off your route"} · ${c.open}</div>
+        <div class="tags">${tags.join("")}</div>
+        <div class="fresh ${c.fresh ? "" : "old"}">${c.fresh ? "●" : "▲"} Confirmed by the café ${c.updated}${c.fresh ? "" : " · may be gone"}</div>
+        ${i === 0 ? `<div>${ev("P03-O05 walked to four places")}${ev("P03-O06 not on the menu anymore")}${ev("P02-O13 price shock at the counter")}${ev("P01-O07 real pumpkin?")}</div>` : ""}
+      </button>`;
+    }).join("");
+    const parts = [];
+    if (state.diet !== "none") parts.push(state.diet === "vegan" ? "Vegan" : "No dairy");
+    if (state.budget < 7) parts.push("≤ " + eur(state.budget));
+    document.getElementById("filterSummary").textContent = parts.join(" · ");
+    document.querySelectorAll("#cards .card").forEach(el => el.addEventListener("click", () => openDetail(el.dataset.cafe)));
+  }
+
+  function openDetail(id) {
+    const c = cafes.find(x => x.id === id);
+    const s = safety(c);
+    const ratio = c.price / c.flatWhite;
+    const sweet = [1,2,3,4,5].map(n => `<i class="${n <= c.sweet ? "on" : ""}"></i>`).join("");
+    const sweetWord = ["", "Barely sweet", "Lightly sweet", "Medium", "Sweet", "Very sweet"][c.sweet];
+    let verdict;
+    if (state.diet === "none") verdict = "";
+    else if (s.ok) verdict = `<div class="verdict ok"><span class="icon">✓</span>Safe for you: no dairy in milk, sauce or syrup</div>`;
+    else verdict = `<div class="verdict warn"><span class="icon">✕</span>Not as it comes: the sauce contains milk</div>`;
+
+    document.querySelector("#s-detail .appbar h1").textContent = c.name;
+    document.getElementById("detail").innerHTML = `
+      <div class="hero" data-ev-box>
+        <div class="small">${c.kiez} · ${c.near} · ${c.open}</div>
+        <h2 style="margin:4px 0 0">Pumpkin Spice Latte</h2>
+        ${verdict}
+        ${!s.ok && s.alt ? `<div class="tip"><b>Ask for the other one.</b> ${s.alt}. Then it's dairy-free.</div>` : ""}
+        <div>${ev("P03-O12 barista checked the bottle in the back")}${ev("P03-O20 stop asking at every counter")}${ev("P03-O14 second dairy-free syrup")}</div>
+      </div>
+
+      <h3>What's in it ${ev("P01-O08 \"Nobody could tell me what was in it\"")}${ev("P04-O09 actual pumpkin or flavour?")}</h3>
+      <div class="parts" data-ev-box>
+        <div class="part"><div class="label">Sauce / syrup</div><div class="value"><b>${c.base}</b>
+          <span class="small">${c.sauceDairy ? "Contains milk" : "No dairy"} · ${c.sauceVegan ? "vegan" : "not vegan"}</span></div></div>
+        <div class="part"><div class="label">Milk</div><div class="value">${c.milk}</div></div>
+        <div class="part"><div class="label">Real pumpkin</div><div class="value"><b>${c.realPumpkin ? "Yes" : "No, flavour only"}</b></div></div>
+        <div class="part"><div class="label">Sweetness</div><div class="value">${sweetWord}<div class="sweet">${sweet}</div>
+          ${ev("P01-O10 too sweet")}${ev("P01-O13 \"not syrup water\"")}</div></div>
+        <div class="part"><div class="label">Size</div><div class="value">${c.size}</div></div>
+      </div>
+
+      <h3>Is it worth it? ${ev("P02-O20 compares with flat white")}${ev("P02-O14 walked out")}</h3>
+      <div class="compare" data-ev-box>
+        <div><div class="small">Pumpkin spice</div><div class="big">${eur(c.price)}</div><div class="small">${c.size}</div></div>
+        <div><div class="small">Flat white here</div><div class="big">${eur(c.flatWhite)}</div><div class="small">${ratio.toFixed(1).replace(".", ",")}× the price</div></div>
+      </div>
+      ${inBudget(c) ? "" : `<div class="tip">That's over the ${eur(state.budget)} you set.</div>`}
+
+      <p class="small" style="margin-top:18px">${c.fresh ? "●" : "▲"} Confirmed by ${c.name} ${c.updated}. Info comes from the café, not from us. ${ev("Constraint: data from cafés")}${ev("P03-O06 stale posts")}</p>
+    `;
+    document.getElementById("goBtn").textContent = `Directions · ${c.detour === 0 ? "on your route" : c.detour + " min off your route"}`;
+    go("s-detail");
+  }
+
+  function go(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+    if (id === "s-list") renderList();
+    const sc = document.querySelector(`#${id} .scroll`); if (sc) sc.scrollTop = 0;
+  }
+
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-go]"); if (t) go(t.dataset.go);
+    const chip = e.target.closest(".chip");
+    if (chip) {
+      const group = chip.parentElement.dataset.group;
+      if (group === "diet") {
+        chip.parentElement.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c === chip));
+        state.diet = chip.dataset.diet;
+      } else if (!chip.textContent.startsWith("+")) {
+        chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") !== "true");
+      }
+    }
+    const sw = e.target.closest(".switch");
+    if (sw) sw.setAttribute("aria-checked", sw.getAttribute("aria-checked") !== "true");
+  });
+
+  const budget = document.getElementById("budget");
+  budget.addEventListener("input", () => {
+    state.budget = +budget.value;
+    const label = state.budget >= 7 ? "Any" : eur(state.budget);
+    document.getElementById("budgetOut").textContent = label;
+    document.getElementById("alertPrice").textContent = state.budget >= 7 ? "Any price" : "Up to " + eur(state.budget);
+  });
+
+  document.getElementById("evToggle").addEventListener("change", e => document.body.classList.toggle("show-ev", e.target.checked));
+</script>
+</body>
+</html>
